@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Image Cropping App</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet"/>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+  }
+  #image-container {
+    max-width: 100%;
+    max-height: 80vh;
+    text-align: center;
+  }
+  #image-container img {
+    max-width: 100%;
+    max-height: 80vh;
+  }
+  #controls {
+    text-align: center;
+    margin-top: 10px;
+  }
+  #controls button {
+    margin: 5px;
+  }
+</style>
+</head>
+<body>
+
+    <div id="image-container">
+      <img id="image" src="" alt="Image">
+    </div>
+    <div id="controls">
+      <button id="prev-btn">Previous</button>
+      <button id="save-btn">Save Cropped Image</button>
+      <button id="next-btn">Next</button>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script>
+      let images = [];
+      let currentIndex = 0;
+      let cropper;
+    
+      // Load the list of images from the server
+      async function loadImages() {
+        const response = await fetch('/images');
+        images = await response.json();
+        if (images.length > 0) {
+          displayImage();
+        } else {
+          alert('No images found in the images directory.');
+        }
+      }
+    
+      // Display the current image and initialize Cropper.js
+      function displayImage() {
+        if (cropper) {
+          cropper.destroy();
+        }
+        const imageElement = document.getElementById('image');
+        const filename = images[currentIndex];
+        imageElement.src = '/image/' + filename;
+        imageElement.onload = function() {
+          cropper = new Cropper(imageElement, {
+            aspectRatio: NaN,  // Free aspect ratio
+          });
+        }
+      }
+    
+      // Event listeners for navigation buttons
+      document.getElementById('prev-btn').addEventListener('click', function() {
+        if (currentIndex > 0) {
+          currentIndex--;
+          displayImage();
+        }
+      });
+    
+      document.getElementById('next-btn').addEventListener('click', function() {
+        if (currentIndex < images.length - 1) {
+          currentIndex++;
+          displayImage();
+        }
+      });
+    
+      // Event listener for the Save button
+      document.getElementById('save-btn').addEventListener('click', async function() {
+        const canvas = cropper.getCroppedCanvas();
+        if (canvas) {
+          const imageData = canvas.toDataURL('image/png');
+          const filename = images[currentIndex];
+          const response = await fetch('/save_cropped', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json;charset=utf-8'
+            },
+            body: JSON.stringify({
+              image: imageData,
+              filename: filename
+            })
+          });
+          const result = await response.json();
+          if (result.status === 'success') {
+            alert('Image saved as ' + result.filename);
+          } else {
+            alert('Failed to save image');
+          }
+        } else {
+          alert('Please select a crop region before saving.');
+        }
+      });
+    
+      // Initialize the app
+      loadImages();
+    
+    </script>
+    
+    </body>
+    </html>
+    
