@@ -6,14 +6,14 @@
 from __future__ import annotations
 from datetime import datetime
 
-from tbexteval.agents.base import AgentConfig, AgentInterface
+from tbexteval.agents.base import AgentConfig, AgentInterface, AgentOutput
 
 
 class ClaudeAgent(AgentInterface):
     def __init__(self, config: AgentConfig):
         super().__init__(config)
     
-    def __call__(self, base64: str, user_prompt: str, file_name: str):
+    def __call__(self, base64: str, user_prompt: str):
         msg = [
             {
                 'role': 'user',
@@ -47,14 +47,20 @@ class ClaudeAgent(AgentInterface):
             )
         except Exception as e:
             print(e)
-            return None
+            return AgentOutput(
+                time=None,
+                response=None,
+                extracted_html=None,
+                input_tokens=None,
+                output_tokens=None,
+                cost=None
+            )
         
-        extracted_data = {
-            "time": [datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
-            "file_name": [file_name],
-            "image": [base64],
-            "response": [response.content[0].text],
-            "extracted_html": self.extract_html(response.content[0].text)
-        }
-
-        return extracted_data
+        return AgentOutput(
+            time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            response=response.content[0].text,
+            extracted_html=self.extract_html(response.content[0].text),
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+            cost=self.calculate_cost(response.usage.input_tokens, response.usage.output_tokens)
+        )

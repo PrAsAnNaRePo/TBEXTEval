@@ -35,7 +35,6 @@ def main():
 
         if isinstance(page_number, list):
             for pg in page_number:
-                pg = parse_pg_no(pg)
                 page = doc[pg - 1]
                 image = page.get_pixmap(dpi=dpi)
                 image.save(f"{COLLECTION_FOLDER}/{file.name}_{pg}.png")
