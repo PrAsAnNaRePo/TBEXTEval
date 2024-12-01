@@ -3,4 +3,4 @@
 .env
 __pychache__
 *.json
-./testtest/
+.test/
